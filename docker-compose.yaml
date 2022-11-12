@@ -1,0 +1,66 @@
+version: "3.2"
+
+services:
+  
+  mysql:
+      image: mysql:5.7
+      volumes:
+        - mysql_data:/var/lib/mysql
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: keycloak
+        MYSQL_USER: keycloak
+        MYSQL_PASSWORD: password
+      networks:
+          - local-keycloak
+
+  keycloak:
+      image: quay.io/keycloak/keycloak:legacy
+      environment:
+        DB_VENDOR: MYSQL
+        DB_ADDR: mysql
+        DB_DATABASE: keycloak
+        DB_USER: keycloak
+        DB_PASSWORD: password
+        KEYCLOAK_USER: admin
+        KEYCLOAK_PASSWORD: admin
+        # Uncomment the line below if you want to specify JDBC parameters. The parameter below is just an example, and it shouldn't be used in production without knowledge. It is highly recommended that you read the MySQL JDBC driver documentation in order to use it.
+        #JDBC_PARAMS: "connectTimeout=30000"
+      ports:
+        - 8080:8080
+      depends_on:
+        - mysql
+      networks:
+        - local-keycloak  
+      volumes:
+        - keycloack_theme:/opt/jboss/keycloak/themes
+
+  smtp4dev:
+      image: rnwood/smtp4dev:v3
+      restart: always
+      ports:
+          # Change the number before : to the port the web interface should be accessible on
+          - '5000:80'
+          # Change the number before : to the port the SMTP server should be accessible on
+          - '25:25'
+          # Change the number before : to the port the IMAP server should be accessible on
+          - '143:143'
+      volumes:
+          # This is where smtp4dev stores the database..
+          - smtp4dev-data:/smtp4dev
+      networks:
+          - local-keycloak     
+
+networks:
+  local-keycloak:
+
+volumes:
+  keycloack_theme:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: './themes'
+  smtp4dev-data:
+  mysql_data:
+      driver: local
